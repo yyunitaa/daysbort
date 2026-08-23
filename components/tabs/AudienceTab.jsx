@@ -42,7 +42,7 @@ export default function AudienceTab() {
           </div>
 
           <div className={`${cardCls} p-5`}>
-            <ChartTitle info={`Kata yang paling sering muncul: ${followerLocationSignal.topLocalKeywords.map((k) => `"${k.keyword}" (${k.n})`).join(", ")}. 96,5% bio tidak menyebut lokasi sama sekali — jangan dibaca sebagai peta domisili pengikut.`}>Lokasi yang Disebut di Bio (perkiraan kasar)</ChartTitle>
+            <ChartTitle info={`Kata yang paling sering muncul: ${followerLocationSignal.topLocalKeywords.map((k) => `"${k.keyword}" (${k.n})`).join(", ")}. 96,5% bio tidak menyebut lokasi sama sekali — jangan dibaca sebagai peta domisili pengikut.`}>Lokasi yang Disebut di Bio</ChartTitle>
             <div className="flex flex-col gap-3 mt-2">
               {[
                 { label: "Menyebut Kolaka/Sultra", value: followerLocationSignal.localMentioned, color: GREEN },
