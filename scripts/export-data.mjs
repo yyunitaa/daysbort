@@ -236,6 +236,7 @@ async function main() {
      FROM l1_silver.mention
      WHERE subject_id='AJD' AND attribution_layer IS NOT NULL
        AND author_segment='institusional' AND author_username IS NOT NULL
+       AND author_username NOT IN ('amri_djamaluddin', 'amrijamaluddin_')
      GROUP BY 1,2 ORDER BY posts DESC LIMIT 5`
   );
 

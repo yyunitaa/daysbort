@@ -57,12 +57,12 @@ export const communitySupporters = [
   { handle: "@akagami.no.shanks840", platform: "TikTok", followers: null, text: "Mantap pak, sikap tegas yang luar biasa", likes: 10 },
 ];
 
-// Akun resmi/media lokal paling aktif memberitakan AJD secara positif — bukan
-// komunitas organik, tapi jadi kanal distribusi utama.
+// Akun resmi/media lokal paling aktif memberitakan AJD — TIDAK termasuk akun
+// pribadi beliau sendiri (@amri_djamaluddin, @amrijamaluddin_), karena akun
+// pribadi bukan "kanal pihak lain" yang relevan dihitung di sini.
 export const officialAccounts = [
-  { handle: "@diskominfokolaka", platform: "Instagram", posts: 22, engagement: 518 },
-  { handle: "@kolakainfo", platform: "Instagram", posts: 10, engagement: 5431 },
-  { handle: "@amri_djamaluddin", platform: "Instagram", posts: 5, engagement: 2089 },
-  { handle: "@infoviralkolaka", platform: "Instagram", posts: 5, engagement: 37 },
-  { handle: "@amrijamaluddin_", platform: "TikTok", posts: 3, engagement: 2283 },
+  { handle: "@diskominfokolaka", platform: "Instagram", posts: 27, engagement: 657 },
+  { handle: "@kolakainfo", platform: "Instagram", posts: 17, engagement: 21850 },
+  { handle: "@infoviralkolaka", platform: "Instagram", posts: 16, engagement: 609 },
+  { handle: "@kolakaupdate", platform: "Instagram", posts: 4, engagement: 1523 },
 ];
