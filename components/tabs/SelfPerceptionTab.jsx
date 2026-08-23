@@ -23,7 +23,7 @@ export default function SelfPerceptionTab() {
       </div>
 
       <section>
-        <SectionLabel eyebrow="1" title="Seberapa Bisa Diandalkan Data Ini?" caveat='Karena nama "Amri" cukup umum, sistem harus memilah mana unggahan yang benar-benar tentang Bapak Amri Jamaluddin dan mana yang kebetulan memakai nama sama.' />
+        <SectionLabel eyebrow="1" title="Seberapa Bisa Diandalkan Data Ini?" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className={`${cardCls} p-5 lg:col-span-1`}>
             <ChartTitle info="157 unggahan pertama sudah dipastikan tentang beliau. Baris terakhir menyaring unggahan yang menyebut kata kunci wilayah Kolaka — bukan berarti semua otomatis relevan, ini baru penyaringan awal. Arahkan kursor ke tiap baris untuk penjelasannya.">Tingkat Kepastian Unggahan</ChartTitle>
