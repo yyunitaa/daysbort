@@ -20,11 +20,12 @@ export const kpi = {
 
 // Breakdown lengkap dari 4.190 unggahan mentah yang menyebut nama "Amri
 // Jamaluddin"/"Amri". 3 baris pertama = 157 unggahan yang SUDAH DIPASTIKAN
-// tentang beliau. 2 baris terakhir memecah sisa 4.033 unggahan yang tadinya
-// digabung jadi satu kategori "Belum Terklasifikasi" — dipecah berdasarkan
-// ada/tidaknya kata kunci wilayah Kolaka di teks unggahan, supaya kelihatan
-// mana yang masih ada kemungkinan relevan vs mana yang hampir pasti cuma
-// kebetulan nama sama (noise).
+// tentang beliau. Baris ke-4 ("review") menyaring unggahan yang menyebut
+// wilayah Kolaka tapi belum pasti soal beliau secara pribadi. Baris terakhir
+// (tier: "noise", 3.419 unggahan tanpa kata kunci wilayah sama sekali) TIDAK
+// ditampilkan di UI (lihat SelfPerceptionTab.jsx, di-filter out) karena tidak
+// relevan untuk ditunjukkan ke dashboard — datanya tetap disimpan di sini
+// untuk ketertelusuran/dokumentasi, bukan dihapus dari catatan.
 export const attributionData = [
   { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi AJD", tier: "confirmed" },
   { label: "Institusional", value: 101, note: "akun resmi Pemkab/media lokal", tier: "confirmed" },
