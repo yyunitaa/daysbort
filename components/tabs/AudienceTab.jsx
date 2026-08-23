@@ -5,8 +5,8 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Legend
 } from "recharts";
-import { Users2, Layers, Radio, ShieldCheck, Info, Heart, MapPin, Sparkles } from "lucide-react";
-import { KPI, SectionLabel, Callout, cardCls, BLUE, GREEN, RED, GRAY, chartAxisStyle, chartGridStroke, chartTooltipStyle, ChartTitle } from "../ui";
+import { Users2, Layers, Radio, ShieldCheck, Heart, MapPin, Sparkles } from "lucide-react";
+import { KPI, SectionLabel, cardCls, BLUE, GREEN, RED, GRAY, chartAxisStyle, chartGridStroke, chartTooltipStyle, ChartTitle } from "../ui";
 import {
   kpi, segmentData, platformActivity, emotionData, communitySupporters, officialAccounts,
 } from "../../data/audience-snapshot";
@@ -18,15 +18,6 @@ import {
 export default function AudienceTab() {
   return (
     <div className="flex flex-col gap-10">
-      <Callout icon={Info} color={BLUE}>
-        Kami menganalisis <span className="font-medium">5.000 pengikut nyata</span> dari akun TikTok resmi
-        @amrijamaluddin_. Perlu diketahui: TikTok tidak pernah membagikan data usia dan jenis kelamin pengikutnya ke
-        pihak luar mana pun. Jadi bagian <span className="font-medium">"Perkiraan Usia, Jenis Kelamin & Kota"</span> di
-        bawah adalah <span className="font-medium" style={{ color: BLUE }}>perkiraan</span>, bukan data pasti. Untuk
-        angka yang benar-benar akurat, dibutuhkan akses resmi ke TikTok Business (lewat akun admin Bapak Amri) atau
-        survei langsung ke warga.
-      </Callout>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPI icon={Users2} label="Calon Anggota Komunitas" value={kpi.communityCandidates} sub="Akun warga biasa yang komentarnya jelas-jelas mendukung Bapak Amri." accent={BLUE} />
         <KPI icon={Layers} label="Jenis Pengikut" value="52% : 48%" sub="Perbandingan warga biasa dengan akun resmi/media." accent={GREEN} />
