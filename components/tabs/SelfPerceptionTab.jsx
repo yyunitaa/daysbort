@@ -26,10 +26,11 @@ export default function SelfPerceptionTab() {
         <SectionLabel eyebrow="1" title="Seberapa Bisa Diandalkan Data Ini?" caveat='Karena nama "Amri" cukup umum, sistem harus memilah mana unggahan yang benar-benar tentang Bapak Amri Jamaluddin dan mana yang kebetulan memakai nama sama.' />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className={`${cardCls} p-5 lg:col-span-1`}>
-            <p className="text-sm font-medium mb-4 text-slate-700">Tingkat Kepastian Unggahan</p>
+            <ChartTitle info="157 unggahan pertama sudah dipastikan tentang beliau. Sisanya dipecah berdasarkan ada/tidaknya kata kunci wilayah Kolaka di teksnya — bukan berarti semua yang menyebut Kolaka otomatis relevan, ini baru penyaringan awal.">Tingkat Kepastian Unggahan</ChartTitle>
             <div className="flex flex-col gap-3">
               {attributionData.map((a) => {
-                const max = attributionData[0].value;
+                const max = Math.max(...attributionData.map((x) => x.value));
+                const barColor = a.tier === "noise" ? "#cbd5e1" : a.tier === "review" ? GRAY : BLUE;
                 return (
                   <div key={a.label} className="flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
@@ -37,7 +38,7 @@ export default function SelfPerceptionTab() {
                       <span className="font-medium text-slate-500">{a.value.toLocaleString("id-ID")}</span>
                     </div>
                     <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${(a.value / max) * 100}%`, background: a.label === "Belum Terklasifikasi" ? GRAY : BLUE }} />
+                      <div className="h-full rounded-full" style={{ width: `${(a.value / max) * 100}%`, background: barColor }} />
                     </div>
                     <span className="text-[11px] text-slate-400">{a.note}</span>
                   </div>

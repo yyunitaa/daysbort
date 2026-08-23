@@ -18,11 +18,19 @@ export const kpi = {
   netSentiment: "+59.2",
 };
 
+// Breakdown lengkap dari 4.190 unggahan mentah yang menyebut nama "Amri
+// Jamaluddin"/"Amri". 3 baris pertama = 157 unggahan yang SUDAH DIPASTIKAN
+// tentang beliau. 2 baris terakhir memecah sisa 4.033 unggahan yang tadinya
+// digabung jadi satu kategori "Belum Terklasifikasi" — dipecah berdasarkan
+// ada/tidaknya kata kunci wilayah Kolaka di teks unggahan, supaya kelihatan
+// mana yang masih ada kemungkinan relevan vs mana yang hampir pasti cuma
+// kebetulan nama sama (noise).
 export const attributionData = [
-  { label: "Belum Terklasifikasi", value: 4033, note: "kandidat noise nama kembar" },
-  { label: "Institusional", value: 101, note: "akun resmi Pemkab/media lokal" },
-  { label: "Atribusi (Attributed)", value: 48, note: "disebut pihak ketiga" },
-  { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi AJD" },
+  { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi AJD", tier: "confirmed" },
+  { label: "Institusional", value: 101, note: "akun resmi Pemkab/media lokal", tier: "confirmed" },
+  { label: "Atribusi (Attributed)", value: 48, note: "disebut pihak ketiga dengan konteks jelas", tier: "confirmed" },
+  { label: "Menyebut Kolaka, Tapi Belum Pasti Soal Beliau", value: 614, note: "ada kata \"Kolaka/Sultra\" tapi bisa jadi soal pejabat/topik lain, bukan beliau — perlu cek manual", tier: "review" },
+  { label: "Kemungkinan Besar Bukan Tentang Beliau", value: 3419, note: "tidak ada kata kunci wilayah Kolaka sama sekali — kemungkinan besar cuma kebetulan nama sama (noise)", tier: "noise" },
 ];
 
 export const platformData = [
