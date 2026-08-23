@@ -56,11 +56,11 @@ function findKeyword(text, list) {
 }
 
 function tierOf(fans) {
-  if (fans >= 100000) return "Mega (>=100rb)";
-  if (fans >= 10000) return "Makro (10rb–100rb)";
-  if (fans >= 1000) return "Mikro (1rb–10rb)";
-  if (fans >= 100) return "Nano (100–1rb)";
-  return "Casual (<100 fans)";
+  if (fans >= 100000) return "Publik Figur Nasional";
+  if (fans >= 10000) return "Selebriti";
+  if (fans >= 1000) return "Selebgram/Influencer";
+  if (fans >= 100) return "Cukup Dikenal";
+  return "Warga Biasa";
 }
 
 async function apifyGet(token, url) {
@@ -173,7 +173,7 @@ async function main() {
       bio: (a.signature || "").split("\n")[0].slice(0, 80),
     }));
 
-  const tierOrder = ["Casual (<100 fans)", "Nano (100–1rb)", "Mikro (1rb–10rb)", "Makro (10rb–100rb)", "Mega (>=100rb)"];
+  const tierOrder = ["Warga Biasa", "Cukup Dikenal", "Selebgram/Influencer", "Selebriti", "Publik Figur Nasional"];
   const followerTiers = tierOrder
     .filter((t) => tierCounts[t])
     .map((t) => ({ tier: t, value: tierCounts[t] }));

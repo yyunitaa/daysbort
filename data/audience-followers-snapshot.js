@@ -105,10 +105,10 @@ export const followerOverview = {
 };
 
 export const followerTiers = [
-  { tier: "Kecil (<100 pengikut)", value: 2147 },
-  { tier: "Menengah-kecil (100–1rb)", value: 2140 },
-  { tier: "Menengah (1rb–10rb)", value: 675 },
-  { tier: "Besar (10rb–100rb)", value: 38 },
+  { tier: "Warga Biasa", value: 2147 },
+  { tier: "Cukup Dikenal", value: 2140 },
+  { tier: "Selebgram/Influencer", value: 675 },
+  { tier: "Selebriti", value: 38 },
 ];
 
 // Hasil cari kata kunci wilayah Sultra/Kolaka di teks bio follower — BUKAN data

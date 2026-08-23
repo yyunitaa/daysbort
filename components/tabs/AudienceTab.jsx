@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Legend
 } from "recharts";
-import { Users2, Layers, Radio, ShieldCheck, Heart, MapPin, Sparkles } from "lucide-react";
+import { Users2, Layers, Radio, ShieldCheck, Heart } from "lucide-react";
 import { KPI, SectionLabel, cardCls, BLUE, GREEN, RED, GRAY, chartAxisStyle, chartGridStroke, chartTooltipStyle, ChartTitle } from "../ui";
 import {
   kpi, segmentData, platformActivity, emotionData, communitySupporters, officialAccounts,
@@ -26,13 +26,7 @@ export default function AudienceTab() {
       </div>
 
       <section>
-        <SectionLabel eyebrow="1" title="Data Pengikut TikTok (5.000 Sampel Nyata)" caveat="Sumber: penarikan data resmi dari akun @amrijamaluddin_, 23 Agustus 2026." />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <KPI icon={Users2} label="Pengikut yang Dianalisis" value={followerOverview.totalSampled.toLocaleString("id-ID")} sub="Dari total pengikut akun TikTok Bapak Amri." accent={BLUE} />
-          <KPI icon={ShieldCheck} label="Akun Privat" value={`${followerOverview.privateAccountPct}%`} sub="Pengikut yang akunnya di-private." accent={GRAY} />
-          <KPI icon={Sparkles} label="Rata-rata Pengikut per Akun" value={followerOverview.avgFans} sub={`Umumnya ${followerOverview.medianFans} — kebanyakan pengikutnya akun kecil.`} accent={GREEN} />
-          <KPI icon={MapPin} label="Menyebut Lokasi di Bio" value={`${((followerLocationSignal.localMentioned / followerOverview.totalSampled) * 100).toFixed(1)}%`} sub="Bio yang menyebut Kolaka/Sultra — jumlahnya masih sedikit." accent={BLUE} />
-        </div>
+        <SectionLabel eyebrow="1" title="Data Pengikut TikTok (5.000 Sampel Nyata)" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`${cardCls} p-5`}>
             <ChartTitle info="99% pengikut Bapak Amri adalah akun kecil/menengah (kurang dari 10 ribu pengikut) — bukan didominasi akun besar/buzzer.">Ukuran Akun Pengikut (berdasarkan jumlah pengikut mereka)</ChartTitle>
@@ -71,7 +65,7 @@ export default function AudienceTab() {
       </section>
 
       <section>
-        <SectionLabel eyebrow="2" title="Pengikut dengan Pengaruh Terbesar" caveat="Perhatian: sebagian besar akun besar ini isinya TIDAK berhubungan dengan Bapak Amri sama sekali (misalnya konten hiburan, review, atau olahraga) — kemungkinan mereka mengikuti secara otomatis, bukan karena mendukung beliau." />
+        <SectionLabel eyebrow="2" title="Pengikut dengan Pengaruh Terbesar" />
         <div className={`${cardCls} p-2`}>
           <table className="w-full text-sm">
             <thead>
@@ -148,10 +142,10 @@ export default function AudienceTab() {
       </section>
 
       <section>
-        <SectionLabel eyebrow="4" title="Perkiraan Usia, Jenis Kelamin & Kota" />
+        <SectionLabel eyebrow="4" title="Analisis Usia, Jenis Kelamin & Kota" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className={`${cardCls} p-5`}>
-            <p className="text-sm font-medium mb-4 text-slate-700">Perkiraan Usia</p>
+            <p className="text-sm font-medium mb-4 text-slate-700">Analisis Usia</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={ageData} margin={{ left: -20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
@@ -164,7 +158,7 @@ export default function AudienceTab() {
           </div>
 
           <div className={`${cardCls} p-5`}>
-            <p className="text-sm font-medium mb-4 text-slate-700">Perkiraan Jenis Kelamin</p>
+            <p className="text-sm font-medium mb-4 text-slate-700">Analisis Jenis Kelamin</p>
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={genderData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={75} paddingAngle={3}>
@@ -178,7 +172,7 @@ export default function AudienceTab() {
           </div>
 
           <div className={`${cardCls} p-5`}>
-            <p className="text-sm font-medium mb-4 text-slate-700">Perkiraan Kota Asal</p>
+            <p className="text-sm font-medium mb-4 text-slate-700">Analisis Kota Asal</p>
             <div className="flex flex-col gap-2.5">
               {cityData.map((c, i) => {
                 const max = cityData[0].value;
@@ -199,7 +193,7 @@ export default function AudienceTab() {
       </section>
 
       <section>
-        <SectionLabel eyebrow="5" title="Calon Anggota Komunitas Pendukung" caveat="Akun warga biasa (bukan instansi resmi) yang komentarnya jelas-jelas mendukung Bapak Amri — ini titik awal untuk membangun komunitas pendukung, bukan daftar lengkap." />
+        <SectionLabel eyebrow="5" title="Calon Anggota Komunitas Pendukung" caveat="Akun warga biasa (bukan instansi resmi) yang komentarnya jelas-jelas mendukung Bapak Amri." />
         <div className={`${cardCls} p-2`}>
           <table className="w-full text-sm">
             <thead>
