@@ -151,7 +151,7 @@ async function main() {
       { label: "Belum Terklasifikasi", value: Number(at.unclassified), note: "kandidat noise nama kembar" },
       { label: "Institusional", value: Number(at.institutional), note: "akun resmi Pemkab/media lokal" },
       { label: "Atribusi (Attributed)", value: Number(at.attributed), note: "disebut pihak ketiga" },
-      { label: "Langsung (Direct)", value: Number(at.direct), note: "pernyataan resmi AJD" },
+      { label: "Langsung (Direct)", value: Number(at.direct), note: "pernyataan resmi Bapak Amri Jamaluddin" },
     ],
     platformData: ajd.platformData.map(({ platform, value }) => ({ platform, value })),
     audienceSegmentData: audienceSegAjd.rows.map((r) => ({ name: r.author_segment, value: Number(r.n_total) })),

@@ -27,7 +27,7 @@ export const kpi = {
 // relevan untuk ditunjukkan ke dashboard — datanya tetap disimpan di sini
 // untuk ketertelusuran/dokumentasi, bukan dihapus dari catatan.
 export const attributionData = [
-  { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi AJD", tier: "confirmed" },
+  { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi Bapak Amri Jamaluddin", tier: "confirmed" },
   { label: "Institusional", value: 101, note: "akun resmi Pemkab/media lokal", tier: "confirmed" },
   { label: "Atribusi (Attributed)", value: 48, note: "disebut pihak ketiga dengan konteks jelas", tier: "confirmed" },
   { label: "Menyebut Kolaka, Tapi Belum Pasti Soal Beliau", value: 614, note: "ada kata \"Kolaka/Sultra\" tapi bisa jadi soal pejabat/topik lain, bukan beliau — perlu cek manual", tier: "review" },

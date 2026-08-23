@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Audience Intelligence — Bupati Kolaka (AJD)",
-  description: "Dashboard sentimen, topik & konten sosial media untuk Amri Jamaluddin (AJD), sumber Kanalytics SPI.",
+  title: "Laporan Media Sosial Kabupaten Kolaka",
+  description: "Dashboard sentimen, topik & konten sosial media untuk Amri Jamaluddin, Bupati Kabupaten Kolaka, sumber Kanalytics SPI.",
 };
 
 export default function RootLayout({ children }) {
