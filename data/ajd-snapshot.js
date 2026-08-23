@@ -30,7 +30,7 @@ export const attributionData = [
   { label: "Langsung (Direct)", value: 8, note: "pernyataan resmi Bapak Amri Jamaluddin", tier: "confirmed" },
   { label: "Institusional", value: 101, note: "akun resmi Pemkab/media lokal", tier: "confirmed" },
   { label: "Atribusi (Attributed)", value: 48, note: "disebut pihak ketiga dengan konteks jelas", tier: "confirmed" },
-  { label: "Menyebut Kolaka", value: 614, note: "ada kata \"Kolaka/Sultra\" tapi bisa jadi soal pejabat/topik lain, bukan beliau — perlu cek manual", tier: "review" },
+  { label: "Menyebut Kolaka", value: 614, note: "ada kata \"Kolaka/Sultra\" tapi bisa jadi soal pejabat/topik lain, bukan beliau", tier: "review" },
   { label: "Kemungkinan Besar Bukan Tentang Beliau", value: 3419, note: "tidak ada kata kunci wilayah Kolaka sama sekali — kemungkinan besar cuma kebetulan nama sama (noise)", tier: "noise" },
 ];
 
