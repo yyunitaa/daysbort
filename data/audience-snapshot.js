@@ -65,4 +65,5 @@ export const officialAccounts = [
   { handle: "@kolakainfo", platform: "Instagram", posts: 17, engagement: 21850 },
   { handle: "@infoviralkolaka", platform: "Instagram", posts: 16, engagement: 609 },
   { handle: "@kolakaupdate", platform: "Instagram", posts: 4, engagement: 1523 },
+  { handle: "@bidikhukumnews.com", platform: "TikTok", posts: 2, engagement: 198 },
 ];
