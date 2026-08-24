@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Laporan Media Sosial Kabupaten Kolaka",
-  description: "Dashboard sentimen, topik & konten sosial media untuk Amri Jamaluddin, Bupati Kabupaten Kolaka, sumber Kanalytics SPI.",
+  title: "Kanalytics",
+  description: "Dashboard intelijen media sosial — sentimen, topik, radar risiko, dan audiens dalam satu tempat.",
 };
 
 export default function RootLayout({ children }) {

@@ -1,10 +1,12 @@
-# Kanalytics AJD Dashboard
+# Kanalytics
 
-Dashboard "Audience Intelligence" untuk Amri Jamaluddin (AJD), Bupati
-Kabupaten Kolaka, dibangun dengan Next.js (App Router) + Recharts. Data
-ditampilkan sebagai **snapshot statis** dari database `kanalytics_spi_test`
-(lihat `data/*-snapshot.js`) — bukan live query — supaya bisa langsung
-di-deploy ke Vercel tanpa perlu meng-expose database ke internet.
+Dashboard "Audience Intelligence" multi-figur/multi-organisasi, dibangun
+dengan Next.js (App Router) + Recharts. Sejak dipindah ke Supabase, **semua
+data — termasuk chart dashboard — di-query live** dari warehouse
+`l1_silver.mention` / `l2_gold.*` (lihat `lib/live-data.js`), bukan lagi baca
+file snapshot statis. `data/*-snapshot.js` masih ada di repo sebagai arsip/
+riwayat cara lama, tapi sudah tidak dipakai kode manapun (kecuali
+`data/audience-followers-snapshot.js`, lihat catatan di bawah).
 
 Ada 3 menu/tab:
 
@@ -67,51 +69,144 @@ Butuh Node.js 18+ terpasang.
 
 ```bash
 npm install
+npm run migrate   # sekali saja, bikin tabel public.users
 npm run dev
 ```
 
-Buka http://localhost:3000.
+Buka http://localhost:3000 — halaman landing platform Kanalytics
+(`app/page.js`). Buat akun lewat `/register` (username + email + password,
+minimal 8 karakter — email harus unik, username boleh sama dengan akun lain),
+lalu masuk lewat `/login` pakai **email** + password.
 
-## Refresh data dari database
+## Login, organisasi & figur
 
-Ketiga file di `data/*-snapshot.js` dibuat dari query ke Postgres. Untuk
-memperbarui angkanya:
+Alurnya: **register → login → `/welcome`** (tagline + tombol "Eksplor") →
+kalau akun belum tergabung organisasi, diarahkan buat organisasi baru
+(`/organization/new`) → daftar figur milik organisasi itu
+(`/organization/figures`, bisa tambah figur baru di situ) → pilih figur →
+dashboard (`/dashboard/[figureId]`).
 
-1. Salin `.env.example` ke `.env.local` dan isi kredensial DB (biasanya
-   `localhost` untuk dev lokal).
-2. Jalankan:
-   ```bash
-   npm run refresh-data
-   ```
-   Ini menjalankan `scripts/export-data.mjs`, yang query ulang tabel
-   `l1_silver.mention` dan `l2_gold.*` untuk `subject_id='AJD'` dan `'KLK'`,
-   lalu menulis ulang `data/ajd-snapshot.js`, `data/klk-snapshot.js`, dan
-   `data/audience-snapshot.js`.
-3. Review diff-nya, commit, lalu deploy ulang.
+Model datanya (skema `public`, terpisah dari data mention di
+`l1_silver`/`l2_gold`) — lihat `scripts/migrations/00{1,2}_*.sql`:
 
-`.env.local` tidak pernah ikut ke git (lihat `.gitignore`) dan script ini
-**tidak** dijalankan saat build di Vercel — hanya alat refresh lokal.
+- `public.users` — satu akun, opsional `organization_id` (satu akun paling
+  banyak gabung satu organisasi).
+- `public.organizations` — satu organisasi bisa punya banyak akun & banyak figur.
+- `public.figures` — milik satu organisasi, punya `name`/`title`, dan
+  `subject_id` opsional yang menghubungkan ke data nyata di `l1_silver.mention`
+  (saat ini cuma `'AJD'` yang beneran ada datanya). Field `subject_id` ini
+  **tidak** ada di form tambah figur — hanya bisa diisi manual lewat DB kalau
+  memang mau menyambungkan figur ke data nyata.
+- `public.user_organizations.role` — 3 role per (akun, organisasi):
+  `super_admin` (pembuat organisasi — akses penuh ke semua figur, checklist
+  diabaikan), `admin` (bisa kelola figur & member, lihat semua figur di daftar
+  tapi cuma bisa **masuk** ke figur yang di-checklist-kan — figur lain tetap
+  kelihatan tapi abu-abu/tidak bisa diklik), `member` (view only, cuma lihat
+  figur yang di-checklist-kan — figur lain disembunyikan sepenuhnya). Role
+  `super_admin` tidak bisa diberikan lewat form Tambah Member (cuma admin/
+  member) dan tidak bisa diubah/dihapus lewat halaman `/member`.
+- `public.figure_access` — checklist figur per akun, diisi lewat halaman
+  `/member` (cari akun berdasarkan email → pilih role → checklist figur).
+  Ditegakkan di `lib/figure-access.js`.
+- Figur yang `subject_id`-nya kosong/tidak match tetap bisa masuk dashboard —
+  menu dan semua chart tetap ada, tapi **kosong** (bukan menampilkan data AJD
+  sebagai contoh), plus **disclaimer eksplisit** di atas kalau data figur ini
+  belum tersedia. Lihat `components/DashboardShell.jsx` dan
+  `data/empty/*-snapshot.js` (bentuk data kosong, struktur sama persis dengan
+  `data/*-snapshot.js` asli supaya tab tidak perlu logic terpisah).
+
+`/welcome`, `/organization/*`, dan `/dashboard/*` dilindungi login
+(`middleware.js`) — landing page di `/` tetap publik. Password di-hash dengan
+bcrypt, session disimpan sebagai cookie ber-signature HMAC (`lib/auth.js`,
+butuh `SESSION_SECRET` di `.env.local`, lihat `.env.example`).
+
+Report figur-spesifik (`/dashboard/[figureId]/report`) — `middleware.js` juga
+menyimpan `figureId` terakhir yang dikunjungi ke cookie `current_figure_id`,
+supaya menu sidebar (Report, submenu Dashboard) yang diklik dari halaman lain
+(Member/Setting/Organisasi) tetap kembali ke figur yang sama, bukan ke
+pemilih figur. Lihat `lib/current-figure.js`.
+
+**Catatan:** login/organisasi/figur/member butuh koneksi DB langsung ke skema
+`public` — tapi ini DB YANG BEDA dari `kanalytics_spi_test` (warehouse
+`l1_silver`/`l2_gold`). Dashboard tidak pernah query warehouse itu saat
+runtime (chart-nya baca `data/*.js` statis), jadi DB untuk login **tidak**
+perlu berisi warehouse sama sekali — cukup tabel dari `npm run migrate`
+(lihat "Deploy ke Vercel" di bawah untuk pakai Supabase).
+
+## Data live (lib/live-data.js)
+
+Chart dashboard (KPI, tren, topik, radar risiko, audiens) di-query langsung
+dari `l1_silver.mention` / `l2_gold.*` lewat `getSelfPerceptionData`,
+`getAudienceData`, dan `getRiskRadarList` di `lib/live-data.js` — dipanggil
+dari `app/dashboard/[figureId]/page.js` (Server Component) berdasarkan
+`figure.subject_id`, hasilnya diteruskan sebagai props ke tab-tab client.
+Subject_id yang tidak match apapun (atau `null`) otomatis dapat hasil
+kosong/nol dari query-nya sendiri — tidak perlu file "empty" terpisah lagi.
+
+Query-nya generik (pakai `l2_gold.agg_opportunity_generic` /
+`agg_risk_radar_generic`, bukan tabel per-subject seperti `_ajd`/`_klk` yang
+lama), jadi otomatis jalan untuk subject_id manapun yang ada datanya di
+warehouse (`AJD`, `ARR`, `KLK`, `BHL`, `KLT`, `KLU`, `KNU`, dst — cek
+`SELECT DISTINCT subject_id FROM l1_silver.mention`).
+
+**Pengecualian:** `data/audience-followers-snapshot.js` (demografi 5.000
+follower TikTok nyata `@amrijamaluddin_`, hasil scrape Apify) **tetap file
+statis** — itu bukan bagian dari warehouse `l1_silver`/`l2_gold`, jadi tidak
+ikut ter-live-query. Hanya berlaku untuk AJD; subject lain selalu dapat versi
+kosong di bagian "Data Pengikut TikTok" (lihat `components/tabs/AudienceTab.jsx`).
+
+`scripts/export-data.mjs` dan `scripts/export-generic-subject.mjs` (skrip
+lama yang menulis `data/*-snapshot.js`) masih ada tapi **sudah tidak dipakai**
+oleh dashboard — dipertahankan sebagai referensi query kalau suatu saat perlu
+generate snapshot statis lagi (mis. untuk demo offline).
+
+## Database: Supabase (public schema + warehouse)
+
+Semuanya — sistem login/organisasi/figur/member (skema `public`) DAN
+warehouse (`l1_silver`/`l2_gold`) — ada di satu project Supabase yang sama.
+`lib/db.js` dan `scripts/migrate.mjs` pakai `DATABASE_URL` kalau di-set di
+`.env.local` (prioritas di atas `DB_HOST` dkk, yang cuma fallback untuk
+Postgres lokal biasa).
+
+Kalau perlu setup ulang dari nol atau ke project Supabase lain:
+
+1. **Buat project Supabase** di [supabase.com](https://supabase.com), ambil
+   connection string dari **Project Settings → Database → Connection
+   string** (URI). Pakai mode **Session/Transaction pooler** (port 6543)
+   untuk koneksi dari Vercel (serverless).
+2. Set `DATABASE_URL` di `.env.local` ke connection string itu.
+3. `npm run migrate` — bikin skema `public` (users, organizations, figures,
+   dst).
+4. Kalau warehouse-nya juga masih di Postgres lokal dan perlu dipindah:
+   `node scripts/migrate-warehouse-to-supabase.mjs` (copy schema+data
+   `l1_silver`/`l2_gold` apa adanya, replace kalau sudah ada) dan/atau
+   `node scripts/copy-public-schema-to-supabase.mjs` (copy akun/organisasi/
+   figur yang sudah ada, skip kalau row-nya sudah ada — keduanya script
+   one-off, baca komentar di masing-masing file sebelum re-run).
 
 ## Deploy ke Vercel
 
 1. Push project ini ke sebuah repo Git (GitHub/GitLab/Bitbucket).
 2. Import repo tersebut di [vercel.com/new](https://vercel.com/new) — Vercel
-   otomatis mendeteksi Next.js, tidak perlu konfigurasi tambahan.
-3. Karena datanya snapshot statis, **tidak ada environment variable yang
-   wajib diisi di Vercel**.
+   otomatis mendeteksi Next.js.
+3. Di pengaturan project Vercel → **Environment Variables**, tambahkan:
+   - `DATABASE_URL` — connection string Supabase yang sama seperti di atas.
+   - `SESSION_SECRET` — generate baru (jangan pakai yang sama dengan lokal):
+     `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+4. Deploy. Landing page (`/`), login, organisasi/figur/member, dan seluruh
+   chart dashboard sekarang sama-sama jalan lewat Supabase yang sama.
 
 ## Catatan tentang data
 
-- Database sumber (`kanalytics_spi_test`) ada di `localhost:5432` — Vercel
-  (serverless/cloud) tidak bisa menjangkau `localhost` mesin kamu, jadi
-  arsitektur snapshot ini memang pilihan yang tepat untuk setup saat ini.
 - Entitas AJD memerlukan disambiguasi nama (nama umum "Amri"/"Jamaluddin").
   Dari ~4.190 mention mentah yang match keyword, hanya ~157 yang lolos
   klasifikasi `attribution_layer` (institutional/attributed/direct) sebagai
   benar-benar relevan dengan Bupati Kolaka — sisanya kemungkinan besar noise
   nama kembar. Dashboard ini memisahkan angka "relevan" vs "volume kotor"
   secara eksplisit di tiap chart.
-- Kalau nanti databasenya dipindah ke host publik (Neon, Supabase, RDS
-  dengan SSL, dll), dashboard ini bisa dikonversi ke live query dengan
-  menambah Next.js API route yang pakai `pg` — struktur query-nya sudah ada
-  di `scripts/export-data.mjs`, tinggal dipindah ke `app/api/.../route.js`.
+- Kalau nanti mau live query ke warehouse (`l1_silver`/`l2_gold`) juga
+  (bukan cuma snapshot statis), itu perlu dipindah ke host publik terpisah
+  (bisa juga Supabase, tapi database/project yang beda dari yang di atas) —
+  strukturnya sudah ada di `scripts/export-data.mjs` dan
+  `scripts/export-generic-subject.mjs`, tinggal dipindah jadi Next.js API
+  route yang pakai `pg`.

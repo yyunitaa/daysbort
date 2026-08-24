@@ -7,10 +7,12 @@ import {
 } from "recharts";
 import { Building2, MessageCircle, Activity, TrendingDown, TrendingUp, Heart } from "lucide-react";
 import { KPI, SectionLabel, cardCls, BLUE, GREEN, RED, GRAY, sentimentColor, HoverLabel, chartAxisStyle, chartGridStroke, chartTooltipStyle, BORDER, ChartTitle } from "../ui";
-import {
-  kpi, platformData, sentimentTrend, volumeTrend, topicEngagement, topTopicsVolume, riskRadar, topContent,
-} from "../../data/klk-snapshot";
 import { getTopicDescription } from "../../data/topic-descriptions";
+import { isWeekInRange, isPlatformMatch } from "../../lib/week-filter";
+
+function EmptyNote({ children = "Belum ada data." }) {
+  return <p className="text-xs text-slate-400 italic py-6 text-center">{children}</p>;
+}
 
 function TopicEngagementTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
@@ -25,35 +27,52 @@ function TopicEngagementTooltip({ active, payload }) {
   );
 }
 
-export default function RegencyTab() {
+export default function RegencyTab({ data, platform, startDate, endDate }) {
+  const {
+    kpi, platformData: allPlatformData, sentimentTrend: allSentimentTrend, volumeTrend: allVolumeTrend,
+    topicEngagement, topTopicsVolume, riskRadar, topContent: allTopContent,
+  } = data;
+
+  const positiveCount = Math.round((kpi.relevantMentions * kpi.positivePct) / 100);
+  const fadingTopic = riskRadar.length > 0 ? [...riskRadar].sort((a, b) => a.delta - b.delta)[0] : null;
+  const fadingIsImproving = fadingTopic && fadingTopic.delta < 0;
+  const platformData = allPlatformData.filter((p) => isPlatformMatch(p.platform, platform));
+  const sentimentTrend = allSentimentTrend.filter((t) => isWeekInRange(t.week, startDate, endDate));
+  const volumeTrend = allVolumeTrend.filter((t) => isWeekInRange(t.week, startDate, endDate));
+  const topContent = allTopContent.filter((c) => isPlatformMatch(c.platform, platform));
+
   return (
     <div className="flex flex-col gap-10">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPI icon={Building2} label="Unggahan yang Benar Tentang Kolaka" value={kpi.relevantMentions.toLocaleString("id-ID")} sub={`Dari ${kpi.rawMentions.toLocaleString("id-ID")} unggahan yang ditemukan. Nama "Kolaka" lebih mudah dipastikan dibanding nama pribadi, jadi datanya lebih akurat.`} accent={BLUE} />
-        <KPI icon={MessageCircle} label="Reaksi Warga yang Positif" value={`${kpi.positivePct}%`} sub="801 dari 1.343 unggahan bernada positif tentang Kolaka." accent={GREEN} />
-        <KPI icon={Activity} label="Skor Sentimen Keseluruhan" value={kpi.netSentiment} sub="Skala -100 sampai +100 — tergolong cukup baik." accent={GREEN} />
-        <KPI icon={TrendingDown} label="Isu yang Mulai Mereda" value="Sengketa Lahan Tambang" sub="Unggahan negatif turun drastis: dari 39 jadi hanya 1 per minggu." accent={GREEN} />
+        <KPI icon={Building2} label="Unggahan yang Benar Tentang Kolaka" value={kpi.relevantMentions.toLocaleString("id-ID")} sub={kpi.rawMentions > 0 ? `Dari ${kpi.rawMentions.toLocaleString("id-ID")} unggahan yang ditemukan. Nama "Kolaka" lebih mudah dipastikan dibanding nama pribadi, jadi datanya lebih akurat.` : "Belum ada unggahan yang dipantau."} accent={BLUE} />
+        <KPI icon={MessageCircle} label="Reaksi Warga yang Positif" value={`${kpi.positivePct}%`} sub={kpi.relevantMentions > 0 ? `${positiveCount} dari ${kpi.relevantMentions.toLocaleString("id-ID")} unggahan bernada positif tentang Kolaka.` : "Belum ada data sentimen."} accent={GREEN} />
+        <KPI icon={Activity} label="Skor Sentimen Keseluruhan" value={kpi.netSentiment} sub="Skala -100 sampai +100." accent={GREEN} />
+        <KPI icon={TrendingDown} label="Isu yang Mulai Mereda" value={fadingIsImproving ? fadingTopic.topic : "-"} sub={fadingIsImproving ? `Turun ${fadingTopic.delta} mention negatif/minggu. Lihat detail tren di tabel Radar Isu di bawah.` : "Belum ada isu yang mereda."} accent={GREEN} />
       </div>
 
       <section>
         <SectionLabel eyebrow="1" title="Unggahan Berdasarkan Platform" />
         <div className={`${cardCls} p-5`}>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={platformData} margin={{ left: -20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
-              <XAxis dataKey="platform" tick={chartAxisStyle} axisLine={{ stroke: chartGridStroke }} tickLine={false} />
-              <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={chartTooltipStyle} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {platformData.map((_, i) => <Cell key={i} fill={BLUE} fillOpacity={0.5 + (platformData[i].value / 633) * 0.5} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {platformData.length === 0 ? (
+            <EmptyNote />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={platformData} margin={{ left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
+                <XAxis dataKey="platform" tick={chartAxisStyle} axisLine={{ stroke: chartGridStroke }} tickLine={false} />
+                <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  {platformData.map((_, i) => <Cell key={i} fill={BLUE} fillOpacity={0.5 + (platformData[i].value / 633) * 0.5} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </section>
 
       <section>
-        <SectionLabel eyebrow="2" title="Tren Reaksi Warga per Minggu" caveat="Lonjakan jumlah unggahan akhir Juli bertepatan dengan puncak isu sengketa lahan tambang." />
+        <SectionLabel eyebrow="2" title="Tren Reaksi Warga per Minggu" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`${cardCls} p-5`}>
             <p className="text-sm font-medium mb-4 text-slate-700">Reaksi Warga dari Minggu ke Minggu</p>
@@ -90,35 +109,43 @@ export default function RegencyTab() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`${cardCls} p-5`}>
             <ChartTitle info="Arahkan kursor ke batang untuk melihat penjelasan topiknya.">Topik yang Paling Menarik Perhatian</ChartTitle>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={topicEngagement} layout="vertical" margin={{ left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} horizontal={false} />
-                <XAxis type="number" tick={chartAxisStyle} axisLine={false} tickLine={false} />
-                <YAxis type="category" dataKey="title" tick={{ fill: "#475569", fontSize: 11 }} width={150} axisLine={false} tickLine={false} />
-                <Tooltip content={<TopicEngagementTooltip />} cursor={{ fill: "#2563eb08" }} />
-                <Bar dataKey="eng" radius={[0, 4, 4, 0]} fill={GREEN} />
-              </BarChart>
-            </ResponsiveContainer>
+            {topicEngagement.length === 0 ? (
+              <EmptyNote />
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={topicEngagement} layout="vertical" margin={{ left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} horizontal={false} />
+                  <XAxis type="number" tick={chartAxisStyle} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="title" tick={{ fill: "#475569", fontSize: 11 }} width={150} axisLine={false} tickLine={false} />
+                  <Tooltip content={<TopicEngagementTooltip />} cursor={{ fill: "#2563eb08" }} />
+                  <Bar dataKey="eng" radius={[0, 4, 4, 0]} fill={GREEN} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
 
           <div className={`${cardCls} p-5`}>
             <ChartTitle info="Arahkan kursor ke nama topik untuk melihat penjelasan singkatnya.">Topik yang Paling Sering Dibicarakan</ChartTitle>
-            <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 250 }}>
-              {topTopicsVolume.map((t) => {
-                const color = sentimentColor(t.net);
-                return (
-                  <div key={t.topic} className="flex items-center justify-between text-xs border-b border-slate-100 pb-2 last:border-0">
-                    <div>
-                      <HoverLabel text={t.topic} description={getTopicDescription(t.topic)} className="text-slate-800" />
-                      <p className="text-[11px] text-slate-400">{t.category} &middot; {t.n} unggahan</p>
+            {topTopicsVolume.length === 0 ? (
+              <EmptyNote />
+            ) : (
+              <div className="flex flex-col gap-2 overflow-y-auto" style={{ maxHeight: 250 }}>
+                {topTopicsVolume.map((t) => {
+                  const color = sentimentColor(t.net);
+                  return (
+                    <div key={t.topic} className="flex items-center justify-between text-xs border-b border-slate-100 pb-2 last:border-0">
+                      <div>
+                        <HoverLabel text={t.topic} description={getTopicDescription(t.topic)} className="text-slate-800" />
+                        <p className="text-[11px] text-slate-400">{t.category} &middot; {t.n} unggahan</p>
+                      </div>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ color, background: `${color}14` }}>
+                        {t.net > 0 ? "+" : ""}{t.net}
+                      </span>
                     </div>
-                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ color, background: `${color}14` }}>
-                      {t.net > 0 ? "+" : ""}{t.net}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -136,24 +163,28 @@ export default function RegencyTab() {
                 </tr>
               </thead>
               <tbody>
-                {riskRadar.map((r) => {
-                  const rising = r.delta > 0;
-                  const color = r.delta > 0 ? RED : r.delta < 0 ? GREEN : GRAY;
-                  return (
-                    <tr key={r.topic} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2.5 text-slate-800"><HoverLabel text={r.topic} description={getTopicDescription(r.topic)} /></td>
-                      <td className="py-2.5 text-slate-500">{r.category}</td>
-                      <td className="py-2.5 text-right text-slate-600">{r.prior7d}</td>
-                      <td className="py-2.5 text-right text-slate-600">{r.last7d}</td>
-                      <td className="py-2.5 pr-2 text-right">
-                        <span className="inline-flex items-center gap-1 font-medium" style={{ color }}>
-                          {rising ? <TrendingUp size={12} /> : r.delta < 0 ? <TrendingDown size={12} /> : null}
-                          {r.delta > 0 ? "+" : ""}{r.delta}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {riskRadar.length === 0 ? (
+                  <tr><td colSpan={5}><EmptyNote /></td></tr>
+                ) : (
+                  riskRadar.map((r) => {
+                    const rising = r.delta > 0;
+                    const color = r.delta > 0 ? RED : r.delta < 0 ? GREEN : GRAY;
+                    return (
+                      <tr key={r.topic} className="border-b border-slate-100 last:border-0">
+                        <td className="py-2.5 text-slate-800"><HoverLabel text={r.topic} description={getTopicDescription(r.topic)} /></td>
+                        <td className="py-2.5 text-slate-500">{r.category}</td>
+                        <td className="py-2.5 text-right text-slate-600">{r.prior7d}</td>
+                        <td className="py-2.5 text-right text-slate-600">{r.last7d}</td>
+                        <td className="py-2.5 pr-2 text-right">
+                          <span className="inline-flex items-center gap-1 font-medium" style={{ color }}>
+                            {rising ? <TrendingUp size={12} /> : r.delta < 0 ? <TrendingDown size={12} /> : null}
+                            {r.delta > 0 ? "+" : ""}{r.delta}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -175,28 +206,32 @@ export default function RegencyTab() {
               </tr>
             </thead>
             <tbody>
-              {topContent.map((c, i) => {
-                const sentColor = c.sentiment === "positif" ? GREEN : c.sentiment === "negatif" ? RED : GRAY;
-                return (
-                  <tr key={c.handle + i} className="border-b border-slate-100 last:border-0 align-top">
-                    <td className="py-3 pl-4 text-xs text-slate-400">{i + 1}</td>
-                    <td className="py-3 text-slate-800 font-medium whitespace-nowrap pr-3">{c.handle}</td>
-                    <td className="py-3 text-slate-600 max-w-md">{c.text}</td>
-                    <td className="py-3 text-slate-500 whitespace-nowrap pr-3">{c.platform}</td>
-                    <td className="py-3">
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize" style={{ color: sentColor, background: `${sentColor}14` }}>
-                        {c.sentiment}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-right">
-                      <span className="inline-flex items-center gap-1 font-medium text-slate-600">
-                        <Heart size={12} strokeWidth={2} />
-                        {c.likes.toLocaleString("id-ID")}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {topContent.length === 0 ? (
+                <tr><td colSpan={6}><EmptyNote /></td></tr>
+              ) : (
+                topContent.map((c, i) => {
+                  const sentColor = c.sentiment === "positif" ? GREEN : c.sentiment === "negatif" ? RED : GRAY;
+                  return (
+                    <tr key={c.handle + i} className="border-b border-slate-100 last:border-0 align-top">
+                      <td className="py-3 pl-4 text-xs text-slate-400">{i + 1}</td>
+                      <td className="py-3 text-slate-800 font-medium whitespace-nowrap pr-3">{c.handle}</td>
+                      <td className="py-3 text-slate-600 max-w-md">{c.text}</td>
+                      <td className="py-3 text-slate-500 whitespace-nowrap pr-3">{c.platform}</td>
+                      <td className="py-3">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium capitalize" style={{ color: sentColor, background: `${sentColor}14` }}>
+                          {c.sentiment}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-right">
+                        <span className="inline-flex items-center gap-1 font-medium text-slate-600">
+                          <Heart size={12} strokeWidth={2} />
+                          {c.likes.toLocaleString("id-ID")}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
