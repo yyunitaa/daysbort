@@ -9,7 +9,8 @@
     "lint": "next lint",
     "refresh-data": "node scripts/export-data.mjs",
     "migrate": "node scripts/migrate.mjs",
-    "pull-followers": "node scripts/pull-followers.mjs"
+    "pull-followers": "node scripts/pull-followers.mjs",
+    "pull-followers-ig": "node scripts/pull-followers-instagram.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

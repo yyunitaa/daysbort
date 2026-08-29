@@ -8,15 +8,24 @@ import {
 import { Users2, Layers, Radio, ShieldCheck, Heart } from "lucide-react";
 import { KPI, SectionLabel, cardCls, BLUE, GREEN, RED, GRAY, chartAxisStyle, chartGridStroke, chartTooltipStyle, ChartTitle } from "../ui";
 import { isPlatformMatch } from "../../lib/week-filter";
-import * as followersData from "../../data/audience-followers-snapshot";
+import * as ajdFollowersData from "../../data/audience-followers-ajd-snapshot";
+import * as arrFollowersData from "../../data/audience-followers-arr-snapshot";
+import * as bhlFollowersData from "../../data/audience-followers-bhl-snapshot";
+import * as marFollowersData from "../../data/audience-followers-mar-snapshot";
 import * as emptyFollowersData from "../../data/empty/audience-followers-snapshot";
 
 // Segmen/platform/emosi/pendukung sekarang live query (lib/live-data.js,
-// via `data` prop). Data pengikut TikTok (followers*) TIDAK bisa jadi live —
-// itu hasil scrape Apify nyata yang cuma pernah dilakukan untuk AJD
-// (@amrijamaluddin_), bukan bagian dari warehouse l1_silver/l2_gold. Subject
-// lain selalu dapat versi kosong di bagian itu, jujur apa adanya.
-const FOLLOWERS_DATA_BY_SUBJECT = { AJD: followersData };
+// via `data` prop). Data pengikut (followers*) TIDAK bisa jadi live — itu
+// hasil scrape Apify nyata (TikTok lewat scripts/pull-followers.mjs, atau
+// Instagram lewat scripts/pull-followers-instagram.mjs), bukan bagian dari
+// warehouse l1_silver/l2_gold. Subject yang belum pernah di-scrape dapat
+// versi kosong (file data/empty/), jujur apa adanya.
+const FOLLOWERS_DATA_BY_SUBJECT = {
+  AJD: ajdFollowersData,
+  ARR: arrFollowersData,
+  BHL: bhlFollowersData,
+  MAR: marFollowersData,
+};
 
 function EmptyNote({ children = "Belum ada data." }) {
   return <p className="text-xs text-slate-400 italic py-6 text-center">{children}</p>;
@@ -54,7 +63,7 @@ export default function AudienceTab({ figureName, subjectId, data, platform }) {
       </div>
 
       <section>
-        <SectionLabel eyebrow="1" title="Data Pengikut TikTok" />
+        <SectionLabel eyebrow="1" title="Data Pengikut" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`${cardCls} p-5`}>
             <ChartTitle info={`Sebaran ukuran akun pengikut ${namaFigur} berdasarkan jumlah pengikut mereka.`}>Ukuran Akun Pengikut (berdasarkan jumlah pengikut mereka)</ChartTitle>
@@ -80,8 +89,10 @@ export default function AudienceTab({ figureName, subjectId, data, platform }) {
             ) : (
               <div className="flex flex-col gap-3 mt-2">
                 {[
-                  { label: "Menyebut Kolaka/Sultra", value: followerLocationSignal.localMentioned, color: GREEN },
-                  { label: "Menyebut kota lain", value: followerLocationSignal.otherCityMentioned, color: GRAY },
+                  ...(followerLocationSignal.localMentioned > 0 || subjectId === "AJD"
+                    ? [{ label: "Menyebut Kolaka/Sultra", value: followerLocationSignal.localMentioned, color: GREEN }]
+                    : []),
+                  { label: "Menyebut kota/wilayah lain", value: followerLocationSignal.otherCityMentioned, color: GRAY },
                   { label: "Tidak menyebut lokasi", value: followerLocationSignal.noLocationInfo, color: "#e2e8f0" },
                 ].map((row) => (
                   <div key={row.label} className="flex flex-col gap-1">

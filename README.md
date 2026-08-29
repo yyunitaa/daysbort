@@ -6,7 +6,7 @@ data — termasuk chart dashboard — di-query live** dari warehouse
 `l1_silver.mention` / `l2_gold.*` (lihat `lib/live-data.js`), bukan lagi baca
 file snapshot statis. `data/*-snapshot.js` masih ada di repo sebagai arsip/
 riwayat cara lama, tapi sudah tidak dipakai kode manapun (kecuali
-`data/audience-followers-snapshot.js`, lihat catatan di bawah).
+`data/audience-followers-<subject>-snapshot.js`, lihat catatan di bawah).
 
 Ada 3 menu/tab:
 
@@ -29,39 +29,69 @@ ditarik (lihat di bawah). Tab ini memakai sinyal yang memang tersedia
 lokasi di bio) sebagai proxy/starting point komunitas, bukan data demografis
 asli. Ini dijelaskan langsung di dalam UI tab tersebut.
 
-## Menarik follower TikTok nyata (opsional, berbayar)
+## Menarik follower nyata (opsional, berbayar)
 
-`data/audience-followers-snapshot.js` diisi dari 5.000 follower nyata
-`@amrijamaluddin_` yang ditarik lewat Apify actor
-`clockworks/tiktok-followers-scraper`. Untuk regenerate dengan angka baru:
+`data/audience-followers-<subject>-snapshot.js` (satu file per subject —
+mis. `-ajd-`, `-bhl-`, `-arr-`, `-mar-`) diisi dari follower nyata hasil
+scrape Apify, dipetakan ke tiap subject di
+`components/tabs/AudienceTab.jsx` (`FOLLOWERS_DATA_BY_SUBJECT`). Subject yang
+belum pernah di-scrape dapat versi kosong (`data/empty/audience-followers-snapshot.js`).
+
+Dua jalur scrape tergantung platform mana yang handle-nya sudah terverifikasi
+di `config/entities.yaml` (proyek `kanalytics-spi`) — **jangan menebak
+handle**, salah akun berarti data follower orang lain disajikan seolah-olah
+pendukung figur yang salah.
+
+**TikTok** (`clockworks/tiktok-followers-scraper`, ~$1/1.000 follower — satu
+actor, field `fans`/`signature` per follower sudah lengkap):
 
 ```bash
-npm run pull-followers -- --handle amrijamaluddin_ --max 5000 --yes
+node scripts/pull-followers.mjs --subject AJD --handle amrijamaluddin_ --max 5000 --yes
 ```
 
-**PERINGATAN: ini mengenakan biaya nyata ke akun Apify kamu** (~$1 per 1.000
-follower saat ini). Script menolak jalan tanpa flag `--yes`, dan **tidak**
-pernah dipanggil otomatis oleh `npm run refresh-data`. Butuh `APIFY_TOKEN` di
-`.env.local`.
+**Instagram** (dua actor berantai, karena API follower-list Instagram TIDAK
+mengekspos follower-count/bio tiap follower seperti TikTok — perlu tahap
+enrichment terpisah):
+1. `scraping_solutions/instagram-scraper-followers-following-no-cookies`
+   (~$0.60/1.000) — daftar username follower.
+2. `apify/instagram-profile-scraper` (~$1.60/1.000) — enrich tiap username
+   jadi `followersCount` + `biography`.
+
+```bash
+node scripts/pull-followers-instagram.mjs --subject ARR --handle ahmadrizal.ramdhani --max 1000 --yes
+```
+
+Logic bersama (tier follower, sinyal lokasi dari bio, ranking paling
+berpengaruh, penulisan file snapshot) ada di `scripts/lib/follower-analysis.mjs`,
+dipakai kedua script supaya bentuk file output identik apa pun platformnya.
+
+**PERINGATAN: kedua script mengenakan biaya nyata ke akun Apify kamu.**
+Keduanya menolak jalan tanpa flag `--yes`, dan **tidak** pernah dipanggil
+otomatis oleh `npm run refresh-data`. Butuh `APIFY_TOKEN` di `.env.local`.
 
 ### Estimasi usia, gender, kota (atas permintaan eksplisit)
 
-TikTok tidak pernah membuka field usia/gender/kota per-follower ke pihak
-ketiga. Atas permintaan eksplisit, `data/audience-followers-snapshot.js` juga
-berisi **estimasi statistik** (bukan pengukuran) untuk ketiganya:
+TikTok/Instagram tidak pernah membuka field usia/gender/kota per-follower ke
+pihak ketiga. Atas permintaan eksplisit, tiap
+`data/audience-followers-<subject>-snapshot.js` berisi **estimasi
+statistik** (bukan pengukuran) untuk ketiganya, dihitung otomatis oleh kedua
+script pull di atas lewat `scripts/lib/demographics.mjs` (kamus nama +
+keyword kota, lihat komentar di file itu untuk metodologi lengkap):
 
 - **Gender** — nama depan (nickName/name) dicocokkan ke kamus nama Indonesia;
-  hanya ~13% follower yang bisa diklasifikasi langsung, sisanya diimputasi
-  proporsional dari rasio itu.
-- **Kota** — keyword wilayah di bio; hanya ~3.4% yang punya sinyal, sisanya
+  biasanya cuma sebagian kecil follower yang bisa diklasifikasi langsung
+  (bervariasi per subject, ~3-16% pada 4 subject yang sudah ditarik), sisanya
+  diimputasi proporsional dari rasio itu.
+- **Kota** — keyword wilayah di bio; coverage rendah (~1-13%), sisanya
   diimputasi proporsional dari distribusi kota yang teridentifikasi.
 - **Usia** — **tidak ada sinyal sama sekali** di data manapun; angkanya cuma
-  asumsi pola umum pengguna TikTok Indonesia, sama untuk semua follower.
+  asumsi pola umum pengguna TikTok/Instagram Indonesia, SAMA persentasenya
+  untuk semua subject (bukan hasil analisis per-follower).
 
 Semua ini diberi label "estimasi" secara eksplisit di UI (tab Audience,
 section "Estimasi Usia, Gender & Kota") dan di komentar
-`data/audience-followers-snapshot.js` — jangan disajikan ke pihak eksternal
-sebagai fakta terukur tanpa disclosure itu.
+`scripts/lib/demographics.mjs` — jangan disajikan ke pihak eksternal sebagai
+fakta terukur tanpa disclosure itu.
 
 ## Menjalankan secara lokal
 

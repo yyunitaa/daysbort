@@ -1,0 +1,177 @@
+// Shared analysis + snapshot-file writer for scripts/pull-followers*.mjs.
+// Both the TikTok (clockworks) and Instagram (scraping_solutions + apify
+// profile-scraper) pullers normalize their raw API output into the same
+// "author" shape below, then hand it to buildSnapshot() so every subject's
+// data/audience-followers-<subject>-snapshot.js file has an identical export
+// shape regardless of source platform (see components/tabs/AudienceTab.jsx,
+// which reads that shape generically).
+//
+// author shape: { name, nickName, fans, signature, verified, privateAccount }
+
+import { writeFile } from "node:fs/promises";
+
+export function tierOf(fans) {
+  if (fans >= 100000) return "Publik Figur Nasional";
+  if (fans >= 10000) return "Selebriti";
+  if (fans >= 1000) return "Selebgram/Influencer";
+  if (fans >= 100) return "Cukup Dikenal";
+  return "Warga Biasa";
+}
+
+function findKeyword(text, list) {
+  const t = (text || "").toLowerCase();
+  return list.find((k) => t.includes(k)) || null;
+}
+
+// LOCAL_KEYWORDS is the subject's own home region (only meaningful for a
+// regional figure like AJD/Bupati Kolaka) — pass [] for subjects with no
+// natural home region (national officials), everything then falls under
+// OTHER_KEYWORDS instead of a misleading "local" bucket.
+export function buildLocationSignal(authors, localKeywords, otherKeywords) {
+  let localMentioned = 0, otherCityMentioned = 0, noLocationInfo = 0;
+  const localKwCounts = {};
+  for (const a of authors) {
+    const bio = a.signature || "";
+    const lk = localKeywords.length ? findKeyword(bio, localKeywords) : null;
+    const ok = findKeyword(bio, otherKeywords);
+    if (lk) {
+      localMentioned++;
+      localKwCounts[lk] = (localKwCounts[lk] || 0) + 1;
+    } else if (ok) {
+      otherCityMentioned++;
+      localKwCounts[ok] = (localKwCounts[ok] || 0) + 1;
+    } else {
+      noLocationInfo++;
+    }
+  }
+  const topLocalKeywords = Object.entries(localKwCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([keyword, n]) => ({ keyword, n }));
+  return { localMentioned, otherCityMentioned, noLocationInfo, topLocalKeywords };
+}
+
+export function buildSnapshot(authors) {
+  const total = authors.length;
+  const verified = authors.filter((a) => a.verified).length;
+  const priv = authors.filter((a) => a.privateAccount).length;
+  const hasBio = authors.filter((a) => (a.signature || "").trim()).length;
+  const fansList = authors.map((a) => a.fans || 0);
+  const followingList = authors.map((a) => a.following || 0);
+  const sortedFans = [...fansList].sort((a, b) => a - b);
+
+  const tierCounts = {};
+  for (const a of authors) {
+    const t = tierOf(a.fans || 0);
+    tierCounts[t] = (tierCounts[t] || 0) + 1;
+  }
+  const tierOrder = ["Warga Biasa", "Cukup Dikenal", "Selebgram/Influencer", "Selebriti", "Publik Figur Nasional"];
+  const followerTiers = tierOrder
+    .filter((t) => tierCounts[t])
+    .map((t) => ({ tier: t, value: tierCounts[t] }));
+
+  const topInfluentialFollowers = [...authors]
+    .sort((a, b) => (b.fans || 0) - (a.fans || 0))
+    .slice(0, 10)
+    .map((a) => ({
+      handle: `@${a.name}`,
+      nickname: a.nickName || "",
+      fans: a.fans || 0,
+      bio: (a.signature || "").split("\n")[0].slice(0, 80),
+    }));
+
+  const followerOverview = {
+    totalSampled: total,
+    verifiedPct: total > 0 ? Number(((verified / total) * 100).toFixed(1)) : 0,
+    privateAccountPct: total > 0 ? Number(((priv / total) * 100).toFixed(1)) : 0,
+    hasBioPct: total > 0 ? Number(((hasBio / total) * 100).toFixed(1)) : 0,
+    avgFans: total > 0 ? Math.round(fansList.reduce((a, b) => a + b, 0) / total) : 0,
+    avgFollowing: total > 0 ? Math.round(followingList.reduce((a, b) => a + b, 0) / total) : 0,
+    medianFans: total > 0 ? sortedFans[Math.floor(total / 2)] : 0,
+    maxFans: total > 0 ? Math.max(...fansList) : 0,
+  };
+
+  return { followerOverview, followerTiers, topInfluentialFollowers };
+}
+
+const EMPTY_GENDER = { genderData: [], genderMeta: { classifiedFromNamePct: 0, classifiedCount: 0, imputedCount: 0, method: null } };
+const EMPTY_CITY = { cityData: [], cityMeta: { classifiedFromBioPct: 0, classifiedCount: 0, imputedCount: 0, method: null } };
+const EMPTY_AGE = { ageData: [], ageMeta: { classifiedFromDataPct: 0, method: null } };
+
+// Writes the same export shape as the original AJD file (see
+// data/audience-followers-ajd-snapshot.js). genderData/cityData/ageData are
+// estimates from scripts/lib/demographics.mjs — pass them in, or omit to
+// leave that section honestly empty (e.g. sample too small to bother).
+export async function writeSnapshotFile(outFile, {
+  meta, followerOverview, followerTiers, followerLocationSignal, topInfluentialFollowers,
+  genderData, genderMeta, cityData, cityMeta, ageData, ageMeta,
+}) {
+  const gender = genderData ? { genderData, genderMeta } : EMPTY_GENDER;
+  const city = cityData ? { cityData, cityMeta } : EMPTY_CITY;
+  const age = ageData ? { ageData, ageMeta } : EMPTY_AGE;
+
+  const fileContent = `// Auto-generated by ${meta.generatedBy} — jangan edit manual.
+// Regenerate: ${meta.regenerateCmd}
+// (PERINGATAN: mengenakan biaya nyata ke akun Apify)
+
+export const meta = ${JSON.stringify(
+    { actor: meta.actor, targetHandle: meta.targetHandle, pulledAt: meta.pulledAt, costUsd: meta.costUsd, apifyRunId: meta.apifyRunId },
+    null,
+    2
+  )};
+
+// Estimasi usia/gender/kota — lihat scripts/lib/demographics.mjs untuk
+// metodologi lengkap (BUKAN pengukuran, cuma proxy dari nickName/bio).
+export const genderData = ${JSON.stringify(gender.genderData, null, 2)};
+export const genderMeta = ${JSON.stringify(gender.genderMeta, null, 2)};
+export const cityData = ${JSON.stringify(city.cityData, null, 2)};
+export const cityMeta = ${JSON.stringify(city.cityMeta, null, 2)};
+export const ageData = ${JSON.stringify(age.ageData, null, 2)};
+export const ageMeta = ${JSON.stringify(age.ageMeta, null, 2)};
+
+export const followerOverview = ${JSON.stringify(followerOverview, null, 2)};
+
+export const followerTiers = ${JSON.stringify(followerTiers, null, 2)};
+
+export const followerLocationSignal = ${JSON.stringify(followerLocationSignal, null, 2)};
+
+export const topInfluentialFollowers = ${JSON.stringify(topInfluentialFollowers, null, 2)};
+`;
+
+  await writeFile(outFile, fileContent, "utf8");
+}
+
+export async function apifyGet(token, url) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return res.json();
+}
+
+export async function apifyRunActor(token, actorSlug, input) {
+  const startRes = await fetch(`https://api.apify.com/v2/acts/${actorSlug}/runs`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!startRes.ok) throw new Error(`Failed to start run for ${actorSlug}: ${startRes.status} ${await startRes.text()}`);
+  const startData = (await startRes.json()).data;
+  const runId = startData.id;
+  const datasetId = startData.defaultDatasetId;
+  console.log(`[${actorSlug}] run started: ${runId} (dataset ${datasetId})`);
+
+  let status = startData.status;
+  while (!["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"].includes(status)) {
+    await new Promise((r) => setTimeout(r, 15000));
+    const run = await apifyGet(token, `https://api.apify.com/v2/actor-runs/${runId}`);
+    status = run.data.status;
+    console.log(`  [${actorSlug}] ${new Date().toLocaleTimeString()} — ${status}`);
+  }
+  if (status !== "SUCCEEDED") {
+    throw new Error(`[${actorSlug}] run ended with status ${status}`);
+  }
+
+  const items = await apifyGet(token, `https://api.apify.com/v2/datasets/${datasetId}/items?format=json&clean=true`);
+  const runInfo = await apifyGet(token, `https://api.apify.com/v2/actor-runs/${runId}`);
+  const costUsd = runInfo.data.usageTotalUsd ?? 0;
+  return { runId, items, costUsd };
+}
